@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width", initial-scale="1.0">
+    <meta http-equiv="Content-Type" value="application/xhtml+xml;charset=utf-8" />
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="apple-mobile-web-app-title" content="Demo">
+    <meta name="application-name" content="Demo">
+    <meta name="theme-color" content="#ffffff">
+
+	<title>Desmos Api Demo</title>
+	<link rel="stylesheet" href="/static/mathquill/mathquill.css"/>
+	<script src="/static/js/jquery-3.2.1.min.js"></script>
+	<script src="/static/mathquill/mathquill.js"></script>
+	<script src="https://www.desmos.com/api/v0.9/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+	<script src="/static/js/handlebars.min-latest.js"></script>
+
+    <script id="group-template" type="text/x-handlebars-template">
+        <div class="group" id="{{expression}}group" numRange="0">
+            <div class="line">
+                <label>Equation:</label>
+                <span class="equation-holder expression">
+                    <span class="equation" id="{{expression}}equation">
+                        0=sin(x)-y
+                    </span>
+                </span>
+                <img class="minus-expression button" id="{{expression}}minus" src="/static/img/subtract.svg"/>
+            </div>
+            <div class="line">
+                <div class="split range">
+                    <div class="side left min">
+                        <input checked="true" type="checkbox" class="isEnabled" id="{{expression}}check-min">
+                        <label>Min:</label>
+                        <span class="equation-holder">
+                            <span class="equation" id="{{expression}}min">
+                                0
+                            </span>
+                        </span>
+                    </div>
+                    <div class="side right max">
+                        <input checked="true" type="checkbox" class="isEnabled" id="{{expression}}check-max">
+                        <label>Max:</label>
+                        <span class="equation-holder">
+                            <span class="equation" id="{{expression}}max">
+                                5
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                <img class="button plus" id="{{expression}}plus" src="/static/img/add.svg"/>
+            </div>
+        </div>
+    </script>
+
+	<script id="range-template" type="text/x-handlebars-template">
+	    <div class="line" id="{{expression}}range{{range}}">
+            <div class="split range-dynamic">
+                <div class="side left min">
+                    <input type="checkbox" text="" class="checkbox-hidden" disabled>
+                    <label>Min:</label>
+                    <span class="equation-holder">
+                        <span class="equation" id="{{expression}}min{{range}}">
+                            0
+                        </span>
+                    </span>
+                </div>
+                <div class="side right max">
+                    <input type="checkbox" text="" class="checkbox-hidden" disabled>
+                    <label>Max:</label>
+                    <span class="equation-holder">
+                        <span class="equation" id="{{expression}}max{{range}}">
+                            5
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <img class="button minus" id="{{expression}}minus{{range}}" src="/static/img/subtract.svg"/>
+        </div>
+	</script>
+
+	<script>
+	    /*
+	    $(".group").each(function () {a=this;});
+OR
+a = $(".group")[INDEX]
+
+$(".equation", a)
+
+$(".expression .equation", a).each(function () { MQ(this).latex(); });
+
+$(".range [.min/.max] .equation", a) .latex()
+
+$("[.min/.max] .isEnabled", a)[0].checked
+
+        */
+        var MQ = MathQuill.getInterface(2);
+
+        var range_template = Handlebars.compile(document.getElementById("range-template").innerHTML);
+        var group_template = Handlebars.compile(document.getElementById("group-template").innerHTML);
+
+        function makeGroupName(x) {
+            return "#"+x+"group";
+        }
+
+        function makeRangeName(x, y) {
+            return "#"+x+"range"+y;
+        }
+
+        function createNewExpressionButton() { // call after each append to #settings to make button be on bottom
+            $("#addExpression").remove();
+            $("#settings").append("<img class=\"button\" id=\"addExpression\" src=\"/static/img/add.svg\"/>")
+            //$("#addExpression").click(function(){alert("Not Implemented");});
+            $("#addExpression").click(newExpression);
+        }
+
+        function createMathField(id) {
+            return MQ.MathField ( document.getElementById(id), {handler: {edit: refresh } } );
+        }
+
+        function newExpression() {
+
+            var x = $("#settings").attr("numGroup");
+            $("#settings").attr("numGroup", parseInt(x)+1);
+
+            var groupName = makeGroupName(x);
+
+            $("#settings").append ( group_template( {expression: x} ) );
+
+            createNewExpressionButton();
+
+            createMathField(x+"equation");
+            createMathField(x+"min");
+            createMathField(x+"max");
+            // Register checkboxes to enable/disable each min/max edit
+
+            $("#"+x+"plus").click(function () {newRange(x);});
+            $("#"+x+"minus").click(function () {deleteExpression(x);});
+
+            console.log("#"+x+"check-min")
+
+            $("#"+x+"check-min").click(function () {onCheckbox(this, "#"+x+"min");});
+            $("#"+x+"check-max").click(function () {onCheckbox(this, "#"+x+"max");});
+        }
+
+        function newRange(x) {
+            var groupName = makeGroupName(x);
+
+            var y = $(groupName).attr("numRange");
+
+            $(groupName).attr("numRange", parseInt(y)+1);
+
+			$(groupName).append(
+	            range_template(
+		            {expression: x, range: y}
+                )
+	        );
+			createMathField(x+"min"+y);
+			createMathField(x+"max"+y);
+
+			$("#"+x+"minus"+y).click(function () {deleteRange(x, y);});
+        }
+
+        function deleteExpression(x) {
+            var groupName = makeGroupName(x);
+
+            $(groupName).remove();
+        }
+
+        function deleteRange(x, y) {
+            var rangeName = makeRangeName(x, y);
+            //$(rangeName+" .equation").each( function (i) {
+            //    MQ(this).revert();
+            //});
+            $(rangeName).remove();
+        }
+
+        function onCheckbox(box, id) {
+            console.log(box);
+            console.log(id);
+            if (box.checked) {
+                //$(id).removeAttr("disabled");
+                $(id).show()
+            } else {
+                //$(id).attr("disabled", true);
+                $(id).hide()
+            }
+        }
+
+        function refresh() {
+            /*var eq = equation.latex()
+            calc.setExpression({id: "equation", latex: eq})*/
+
+            // $(".equation").each( function () { console.log(MQ.MathField(this).latex()) });
+
+        }
+
+		function go() {
+			var div = document.getElementById('calculator');
+			calc = Desmos.GraphingCalculator(div,
+			        {keypad: false, settingsMenu: false,
+			        expressionsTopbar: false, images: false,
+			        expressions: false});
+			calc.setExpression({id:'equation', latex:''})
+
+			/*equation = MQ.MathField(document.getElementById("equation"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			min = MQ.MathField(document.getElementById("min"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			max = MQ.MathField(document.getElementById("max"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			/*min1 = MQ.MathField(document.getElementById("min1"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			max1 = MQ.MathField(document.getElementById("max1"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }}); */
+
+            var expression = 0;
+			var range = 0;
+
+            createNewExpressionButton();
+
+            /*newExpression(0);
+            newExpression(1);
+            newExpression(2);
+            newExpression(3);
+            newExpression(4);
+
+            newRange(1);
+            newRange(2);
+            newRange(2);
+            newRange(3);
+            newRange(3);
+            newRange(3);
+            newRange(4);
+            newRange(4);
+            newRange(4);
+            newRange(4);
+
+			refresh();*/
+		}
+
+		$(go);
+
+	</script>
+	<style>
+		html, body {
+			height: 100%;
+			overflow: hidden;
+		}
+
+        #main {
+            overflow: hidden;
+        }
+
+		.split { /* .split as container, .side .left and .side .right as equal splits*/
+			height: 100%;
+			width: 100%;
+			overflow: hidden;
+			float: left;
+			/*margin: 0 auto;
+			/*float: left;*/
+            /*vertical-align: middle;
+
+            height: 100%;
+            display: inline-block;*/
+		}
+		.side {
+			display: block;
+			vertical-align: top;
+			height: 100%;
+			width: calc(50% - 4px);
+			margin: 2px;
+		}
+		.left {
+            float: left;
+        }
+
+        .right {
+            float: right;
+        }
+
+		#settings {
+			overflow: auto;
+			height: calc(100% - 20px);
+			overflow-x: auto;
+		}
+		#calculator {
+			height: calc(100% - 20px);
+			padding: 0px;
+			overflow: visible;
+		}
+
+        .equation-holder {
+            display: block;
+		    overflow: hidden;
+		    padding: 0 4px 0 6px;
+		    height: 24px;
+        }
+
+        .expression {
+            margin-right: 26px;
+        }
+
+		.equation {
+		    /*min-width: 100px;*/
+		    width: 100%
+		}
+
+        label {
+            float: left;
+            font-size: 18px;
+            padding: 1px;
+        }
+
+		.group {
+		    padding: 2px;
+		    border: 1px #444444 solid;
+		    margin: 8px 1px;
+		    overflow: hidden;
+		    min-width: 225px;
+		}
+
+        .line {
+            margin: 1px 0;
+            display: inline;
+            width: 100%;
+            overflow: hidden;
+            height: 28px !important;
+            /*outline:1px #000 solid;*/
+        }
+
+        input[type='checkbox'] {
+            float: left;
+            vertical-align: middle;
+        }
+
+        .button {
+            float: right;
+            display: inline;
+            vertical-align: middle;
+            margin: 1px 0px;
+            width: 24px;
+            height: 24px;
+        }
+
+        #addExpression {
+            margin-top: 10px;
+            margin-right: 5px;
+        }
+
+        .minus-expression {
+            margin-top: -25px;
+        }
+
+        .range, .range-dynamic {
+            width: calc(100% - 24px);
+        }
+
+        /*.range-dynamic {
+           width: calc(50% - 20px); margin-left: 20px;
+        }*/
+
+        .checkbox-hidden {
+            opacity: 0;
+        }
+
+        @media all and (max-width:600px) {
+            #settings, #calculator {
+                height: calc(50% - 10px);
+                width: calc(100% - 4px);
+                margin: 2px;
+            }
+
+            #calculator {
+                display: block;
+            }
+        }
+
+	</style>
+</head>
+
+<body>
+	<div class="split" id="main">
+		<div class="side left" id="settings" numGroup="0">
+			<h1>Settings</h1>
+		</div>
+		<div class="side right" id="calculator">
+		</div>
+	</div>
+</body>
+
+</html>

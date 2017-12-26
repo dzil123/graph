@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="utf-8">
+	<title>Desmos Api Demo</title>
+	<link rel="stylesheet" href="/static/mathquill/mathquill.css"/>
+	<!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>-->
+	 <script src="/static/js/jquery-3.2.1.min.js"></script>
+	<script src="/static/mathquill/mathquill.js"></script>
+	<script src="https://www.desmos.com/api/v0.9/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+	<script src="/static/js/handlebars.min-latest.js"></script>
+
+	<script id="range-template" type="text/x-handlebars-template">
+	   <div class="line">
+            <div class="split" style="width: calc(100% - 26px);">
+                <div class="side left" style="width: calc(50% - 20px); margin-left: 20px;">
+                    <label>Min:</label>
+                    <span class="equation-holder"
+                        <span class="equation" id="min1">
+                            0
+                        </span>
+                    </span>
+                </div>
+                <div class="side right" style="width: calc(50% - 20px); margin-left: 20px;">
+                    <label>Max:</label>
+                    <span class="equation-holder">
+                        <span class="equation" id="max1">
+                            5
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <img height="24" id="plus" src="/static/img/subtract.svg"/>
+        </div>
+	</script>
+
+	<script>
+        var MQ = MathQuill.getInterface(2);
+
+        function refresh() {
+            var eq = equation.latex()
+            calc.setExpression({id: "equation", latex: eq})
+        }
+
+	    function onEquationEdit(x) {
+	        return function () {
+	            refresh(x)
+	        }
+	    }
+
+		function go() {
+			var div = document.getElementById('calculator');
+			calc = Desmos.GraphingCalculator(div,
+			        {keypad: false, settingsMenu: false,
+			        expressionsTopbar: false, images: false,
+			        expressions: false});
+			calc.setExpression({id:'equation', latex:''})
+
+			equation = MQ.MathField(document.getElementById("equation"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			min = MQ.MathField(document.getElementById("min"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			max = MQ.MathField(document.getElementById("max"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			min1 = MQ.MathField(document.getElementById("min1"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+			max1 = MQ.MathField(document.getElementById("max1"),
+			        {handlers: {
+			            edit: onEquationEdit
+			        }});
+
+			refresh();
+		}
+	</script>
+	<style>
+		html, body {
+			height: 100%;
+			overflow: hidden;
+		}
+
+		.split { /* .split as container, .side .left and .side .right as equal splits*/
+			height: 100%;
+			width: 100%;
+			overflow: hidden;
+			float: left;
+			/*margin: 0 auto;
+			/*float: left;*/
+            /*vertical-align: middle;
+
+            height: 100%;
+            display: inline-block;*/
+		}
+		.side {
+			display: inline-block;
+			vertical-align: top;
+			height: 100%;
+			width: 50%;
+			margin: 0px;
+		}
+		.left {
+            float: left;
+        }
+
+        .right {
+            float: right;
+        }
+
+		#settings {
+			overflow: auto;
+		}
+		#calculator {
+			height: 95%;
+		}
+
+        .equation-holder {
+            display: block;
+		    overflow: hidden;
+		    padding: 0 4px 0 6px;
+        }
+
+		.equation {
+		    /*min-width: 100px;*/
+		    width: 100%
+		}
+
+        label {
+            float: left;
+            font-size: 18px;
+            padding: 1px;
+        }
+
+		.group {
+		    /*background-color: #AAAAAA;*/
+		    /*width: 95%;*/
+		    padding: 2px;
+		    /*border-color: #AAAAAA;*/
+		    border: 1px #AAAAAA solid;
+		    margin: 1px;
+		    /*float: left;*/
+		    overflow: hidden;
+		}
+
+        .line {
+            margin: 1px 0 0;
+            display: inline-block;
+            width: 100%;
+        }
+
+        input[type='checkbox'] {
+            float: left;
+        }
+
+        img {
+            /*float: right;
+            display: inline;
+            vertical-align: middle;*/
+            margin: 0px 1px;
+        }
+
+        .range {
+            width: calc(100% - 26px);
+        }
+
+		/*.inner {
+		    background-color: #FFFFFF;
+            padding: 2px;
+		}*/
+
+	</style>
+</head>
+
+<body onLoad="go()">
+	<div class="split">
+		<div class="side left" id="settings">
+			<h1>Settings</h1>
+			<div class="group" id="group1">
+			    <!--
+			    <table border=0 style='width:100%'>
+			        <tr>
+			            <td>Equation:</td>
+			            <td> <span class="equation" id="equation">
+                            0=sin(x)-y
+                        </span></td>
+			        </tr>
+			            <td>Max:</td>
+			            <td> <span class="equation" id="min">
+                            0
+                        </span></td>
+			        </tr>
+			        <td>Min:</td>
+			            <td> <span class="equation" id="max">
+                            5
+                        </span></td>
+			        </tr>
+			    </table>
+                -->
+                <div class="line">
+                    <label>Equation:</label>
+                    <span class="equation-holder">
+                        <span class="equation" id="equation">
+                            0=sin(x)-y
+                        </span>
+                    </span>
+                </div>
+                <div class="line">
+                    <div class="split range">
+                        <div class="side left">
+                            <input type="checkbox" text=""\>
+                            <label>Min:</label>
+                            <span class="equation-holder">
+                                <span class="equation" id="min">
+                                    0
+                                </span>
+                            </span>
+                        </div>
+                        <div class="side right">
+                            <input type="checkbox" text=""\>
+                            <label>Max:</label>
+                            <span class="equation-holder">
+                                <span class="equation" id="max">
+                                    5
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <img height="24" id="plus" src="/static/img/add.svg"/>
+                </div>
+            </div>
+		</div>
+		<div class="side right" id="calculator">
+		</div>
+	</div>
+</body>
+
+</html>
